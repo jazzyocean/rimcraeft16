@@ -32,6 +32,11 @@ void *t_Video(void *args) {
     const int charsize = 16;
     const int countW = screenWidth/charsize;
     const int countH = screenHeight/charsize;
+    int posx = 0;
+    int posy = 0;
+    int row = 0;
+    int col = 0;
+    int offs = 0;
 
     SetTraceLogLevel(LOG_NONE);
     InitWindow(screenWidth, screenHeight, "RIMCRÆFT VIDEO");
@@ -43,15 +48,35 @@ void *t_Video(void *args) {
     clock_t prev = clock();
     while (testBit(emu->registers[FL], FL_OF, 0) && !WindowShouldClose()) {
         if (((double)(clock() - prev))/CLOCKS_PER_SEC >= 0.01) {
+            posx = 0;
+            posy = 0;
+            row = 0;
+            col = 0;
+            offs = 0;
             BeginDrawing();
                 ClearBackground((Color){0, 0, 0, 1});
-                for (int y = 0; y < countH; y++) {
-                    for (int x = 0; x < countW; x++) {
-                        char str[2];
-                        str[0] = emu->memory[VRAM+x+(y*countW)];
-                        str[1] = 0;
-                        DrawTextEx(font, str, (Vector2){x*charsize, y*charsize}, charsize, 0, WHITE);
+                while (row < countH) {
+                    char c = emu->memory[VRAM+offs];
+                    char str[2] = {c, 0};
+
+                    DrawTextEx(font, str, (Vector2){posx, posy}, charsize, 0, WHITE);
+
+                    if (c == 0x0a) {
+                        posy += charsize;
+                        row++;
+                        posx = 0;
+                        col = 0;
+                    } else {
+                        posx += charsize;
+                        col += 1;
+                        if (posx >= screenWidth) {
+                            posx = 0;
+                            col = 0;
+                            posy += charsize;
+                            row++;
+                        }
                     }
+                    offs++;
                 }
             EndDrawing();
         }
@@ -149,8 +174,14 @@ void emulationLoop(Emulator *emu) {
             //  
             //  ARITHMATIC INSTRUCTIONS
             //  
-            if (op <= 0x7 || (op >= 0xa && op <= 0xd) || op == 0x10 || op == 0x12 || (op >= 0x14 && op <= 0x18) || (op >= 0x1a && op <= 0x22) || (op >= 0x26 && op <= 0x2c)) {
-                if (op == 0x00 || op == 0x02 || op == 0x04 || op == 0x06 || op == 0x0a || op == 0x10 || op == 0x12 || op == 0x14 || op == 0x16 || op == 0x1b || op == 0x1d || op == 0x20 || op == 0x22 || op == 0x27 || op == 0x29) {
+            if (op <= 0x7 || (op >= 0xa && op <= 0xd) || op == 0x10 
+                          || op == 0x12 || (op >= 0x14 && op <= 0x18)
+                          || (op >= 0x1a && op <= 0x22)
+                          || (op >= 0x26 && op <= 0x2c)) {
+                if (op == 0x00 || op == 0x02 || op == 0x04 || op == 0x06 ||
+                    op == 0x0a || op == 0x10 || op == 0x12 || op == 0x14 ||
+                    op == 0x16 || op == 0x1b || op == 0x1d || op == 0x20 ||
+                    op == 0x22 || op == 0x27 || op == 0x29) {
                     immn = getWord(emu, emu->registers[PC]);
                     emu->registers[PC] += 2;
                     emu->tickCounter += 2;
