@@ -58,6 +58,7 @@
 #define FL_CR 4  // 100 CaRry
 #define FL_IN 5  // 101 INterrupt inhibit
 #define FL_IR 6  // 110 INterrupt inhibit
+#define FL_INT 7  // 111 INTerrupt active
 
 
 #define DEBUG_TAG  "[VERBOSE] "

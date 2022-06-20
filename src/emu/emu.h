@@ -14,6 +14,7 @@ struct Emulator {
     clock_t startTime;
     uint64_t clargs;
     uint8_t *rom;
+    uint8_t intID;
 };
 
 typedef struct Emulator Emulator;

@@ -37,6 +37,8 @@ void *t_Video(void *args) {
     int row = 0;
     int col = 0;
     int offs = 0;
+    int keysLastPressed[6];
+    int ckey = 0;
 
     SetTraceLogLevel(LOG_NONE);
     InitWindow(screenWidth, screenHeight, "RIMCRÆFT VIDEO");
@@ -80,6 +82,30 @@ void *t_Video(void *args) {
                 }
             EndDrawing();
         }
+
+        int key;
+
+        for (int keylp = 0; keylp < 6; keylp++) {
+            if (keysLastPressed[keylp] == 0) continue;
+            if (!IsKeyDown(keysLastPressed[keylp])) {
+                keysLastPressed[ckey] = 0;
+                ckey--;
+                setWord(emu, 0x98F8, (uint16_t)keysLastPressed[keylp]);
+                emu->registers[FL] |= (1 << FL_INT);
+                emu->intID = 0x02;
+            }
+        }
+        
+        do {
+            key = GetKeyPressed();
+            if (ckey < 6) keysLastPressed[ckey] = key;
+            if (key != 0) {
+                setWord(emu, 0x98F8, (uint16_t)key);
+                emu->registers[FL] |= (1 << FL_INT);
+                emu->intID = 0x01;
+                ckey++;
+            }
+        } while (key != KEY_NULL);
     }
     
     return 0;
@@ -120,10 +146,11 @@ int initEmulator(Emulator *emu, char *file, int flags) {
 
     printf(INFO_TAG"Loaded sector 0 in %dms\n", secondsElapsed*1000);
     
-    emu->registers[PC] = emu->memory[ROM_0+S0_ENTRY_POINT] | emu->memory[ROM_0+S0_ENTRY_POINT+1];
-    printf(INFO_TAG"   : ROM Flags: 0x%04x\n", emu->memory[ROM_0+S0_ROM_FLAGS] | emu->memory[ROM_0+S0_ROM_FLAGS+1]);
-    printf(INFO_TAG"   : Num Sectors in ROM: 0x%04x\n", emu->memory[ROM_0+S0_NUM_SECTORS] | emu->memory[ROM_0+S0_NUM_SECTORS+1]);
-    printf(INFO_TAG"   : Entry Point: 0x%04x\n", emu->memory[ROM_0+S0_ENTRY_POINT] | emu->memory[ROM_0+S0_ENTRY_POINT+1]);
+
+    emu->registers[PC] = getWord(emu, ROM_0+S0_ENTRY_POINT);
+    printf(INFO_TAG"   : ROM Flags: 0x%04x\n", getWord(emu, ROM_0+S0_ROM_FLAGS));
+    printf(INFO_TAG"   : Num Sectors in ROM: 0x%04x\n", getWord(emu, ROM_0+S0_NUM_SECTORS));
+    printf(INFO_TAG"   : Entry Point: 0x%04x\n", getWord(emu, ROM_0+S0_ENTRY_POINT));
 
     emu->startTime = clock();
 }
@@ -152,14 +179,17 @@ void emulationLoop(Emulator *emu) {
         
         uint16_t inst = getWord(emu, emu->registers[PC]);
 
-        // 0 0 0 0 0 0 0 0 | 0 0 0 0 0 0 0 0
-        // ----------- --- | --- ----- -----
-        // op          cn    cn  dst    src
+        // FEDCBA98 76543210
+        // dddcccco ooooosss
+        // d: dst
+        // c: condition
+        // o: opcode
+        // s: src
 
         int src = inst & 0b111;
-        int dst = (inst >> 3) & 0b111;
-        int cn = (inst >> 6) & 0b1111;
-        int op = inst >> 10;
+        int op = (inst >> 3) & 0b111111;
+        int cn = (inst >> 9) & 0b1111;
+        int dst = (inst >> 0xD) & 0b111;
         uint16_t temp;
 
         emu->instructionCounter++;
@@ -395,8 +425,17 @@ void emulationLoop(Emulator *emu) {
                         if (emu->clargs&1) printf("      rts\n");
                         break;
 
-                    case 0x3F:  // EXIT; 1 word
-                        emu->registers[FL] |= 1;
+                    case 0x36:  // STI; 1 words
+                        emu->registers[FL] |= 1 << FL_IN;
+                        if (emu->clargs&1) printf("      sti\n");
+                        break;
+                    case 0x37:  // CLI; 1 word
+                        emu->registers[FL] &= ~(1 << FL_IN);
+                        if (emu->clargs&1) printf("      cli\n");
+                        break;
+                    
+                    case 0x3F:  // Exit; 1 word
+                        emu->registers[FL] |= 1 << FL_OF;
                         if (emu->clargs&1) printf("      exit\n");
                         break;
                     default:
@@ -424,6 +463,15 @@ void emulationLoop(Emulator *emu) {
         if ((emu->clargs&0b00000010)>>1) {
             getchar();
             printf("\x1B[1A");
+        }
+
+        if (testBit(emu->registers[FL], FL_INT, 1)) {
+            push(emu, emu->registers[PC]);
+            uint16_t sector = getWord(emu, 0x4000+(4*emu->intID)+2);
+            if (sector != 0) loadSector(emu, sector, 3);
+            emu->registers[FL] &= ~(1 << FL_INT);
+            emu->registers[PC] = getWord(emu, 0x4000+(4*emu->intID));
+            if (emu->clargs&1) printf(DEBUG_TAG"INT 0x%02x\n", emu->intID);
         }
     }
 }
