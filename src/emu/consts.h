@@ -16,7 +16,14 @@
 #define VRAM  0xA000 // -> 0xFFFF
 #define PHWIO 0x9800 // -> 0x9FFF
 // :
-#define WRAM_BANK 0x9B02
+#define ROMSEL3   0x9B10
+#define ROMSEL2   0x9B0E
+#define ROMSEL1   0x9B0C
+#define ROMSEL0   0x9B0A
+#define WRAMSEL3  0x9B08
+#define WRAMSEL2  0x9B06
+#define WRAMSEL1  0x9B04
+#define WRAMSEL0  0x9B02
 #define MEM_MODE  0x9B00
 #define PININ2    0x9A06
 #define PININ1    0x9A04
@@ -58,13 +65,14 @@
 #define FL_CR 4  // 100 CaRry
 #define FL_IN 5  // 101 INterrupt inhibit
 #define FL_IR 6  // 110 INterrupt inhibit
-#define FL_INT 7  // 111 INTerrupt active
+#define FL_INT 7 // 111 INTerrupt active
+#define FL_CP 8  //     Check Page
 
 
 #define DEBUG_TAG  "[VERBOSE] "
 #define INFO_TAG   "[   INFO] "
 #define ERROR_TAG  "[  ERROR] "
-#define MEMORY_TAG "[ MEMORY]"
+#define MEMORY_TAG "[ MEMORY] "
 #define TAG_LENGTH 9
 
 #endif

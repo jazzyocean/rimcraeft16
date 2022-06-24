@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    Emulator emu = {.instructionCounter = 0, .tickCounter = 0, .clargs = flags};
+    Emulator emu = {.instructionCounter = 0, .tickCounter = 0, .clargs = flags, .breakpoint=(flags&0b10)>>1};
     if (initEmulator(&emu, argv[1], flags) == -1) {
         printf(ERROR_TAG"Error initializing emulator state\n");
         return -2;
@@ -51,11 +51,11 @@ int main(int argc, char **argv) {
         return -3;
     }
 
-    printSector(emu.memory, 0);
+    //printSector(emu.memory, 0);
     printf(INFO_TAG"Emulator started.\n");
     emulationLoop(&emu);
     printf(INFO_TAG"Emulator Ended.\n");
-    printSector(&emu.memory[VRAM], 0xa);
+    //printSector(&emu.memory[0x0000], 0);
     
     double secondsElapsed = ((double)(clock() - emu.startTime))/CLOCKS_PER_SEC;
     printf(INFO_TAG"Executed %lli instructions (%lli ticks) in %Lfs (%f instuctions/sec, %f ticks/sec)\n", emu.instructionCounter, emu.tickCounter, secondsElapsed, ((double)emu.instructionCounter)/secondsElapsed, ((double)emu.tickCounter)/secondsElapsed);

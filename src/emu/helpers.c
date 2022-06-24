@@ -59,7 +59,7 @@ int printSector(uint8_t *sector, uint16_t csector) {
 
     lines++;
     printf(MEMORY_TAG"\n");
-    printf(MEMORY_TAG"            -0 -1 -2 -3 -4 -5 -6 -7  -8 -9 -a -b -c -d -e -f    ---0 ---2 ---4 ---6  ---8 ---a ---c ---e\n");
+    printf(MEMORY_TAG"           -0 -1 -2 -3 -4 -5 -6 -7  -8 -9 -a -b -c -d -e -f    ---0 ---2 ---4 ---6  ---8 ---a ---c ---e\n");
 
     for (i = 0; i < 0x1000; i += 16) {
         // Display 16 bytes
@@ -92,7 +92,7 @@ int printSector(uint8_t *sector, uint16_t csector) {
         int res = strcmp(current, previous);
         if (res != 0) {
             // If it's not, print it
-            printf(MEMORY_TAG" %04x:%04x  %s\n", csector, i, current);
+            printf(MEMORY_TAG"%04x:%04x  %s\n", csector, i, current);
             strcpy(previous, current);
             skipped = 0;
             lines++;
@@ -100,7 +100,7 @@ int printSector(uint8_t *sector, uint16_t csector) {
         else if (res == 0 && !skipped){
             // If it is, and the previous line wasnt skipped, display stars
             skipped = 1;
-            printf(MEMORY_TAG"            *  *  *\n");
+            printf(MEMORY_TAG"           *  *  *\n");
             lines++;
         }
         // If it is, and the previous line was skipped then like...idk man go fuck yourself
@@ -109,7 +109,7 @@ int printSector(uint8_t *sector, uint16_t csector) {
     // If we skipped the last lines, show where the end bytes are
     // Not really useful for this function's specific use but im adding it anyways
     if (skipped) {
-        printf(MEMORY_TAG" %04x:%04x\n", csector, i);
+        printf(MEMORY_TAG"%04x:%04x\n", csector, i);
         lines++;
     }
     printf(MEMORY_TAG"\n");
